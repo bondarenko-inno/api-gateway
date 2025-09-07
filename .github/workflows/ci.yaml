@@ -48,7 +48,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/api-gateway:${{ github.sha }} .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/api-gateway:latest .
 
       - name: Push Docker image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/api-gateway:${{ github.sha }}
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/api-gateway:latest

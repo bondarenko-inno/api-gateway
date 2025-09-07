@@ -1,0 +1,5 @@
+services:
+  uri:
+    auth: http://auth-service:9000
+    user: http://user-service:8071
+    order: http://order-service:8081

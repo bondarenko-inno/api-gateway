@@ -11,21 +11,21 @@ spring:
         webflux:
           routes:
             - id: auth-service
-              uri: ${AUTH_SERVICE_URI:http://localhost:9000}
+              uri: ${services.uri.auth:http://localhost:9000}
               predicates:
                 - Path=/auth/**
               filters:
                 - StripPrefix=1
 
             - id: user-service
-              uri: ${USER_SERVICE_URI:http://localhost:8071}
+              uri: ${services.uri.user:http://localhost:8071}
               predicates:
                 - Path=/users/**
               filters:
                 - StripPrefix=1
 
             - id: order-service
-              uri: ${ORDER_SERVICE_URI:http://localhost:8081}
+              uri: ${services.uri.order:http://localhost:8081}
               predicates:
                 - Path=/orders/**
               filters:
