@@ -3,6 +3,19 @@ name: market-place
 services:
 #  databases
 
+  mongo:
+    image: mongo:6.0
+    container_name: mongo-db
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: payment_user
+      MONGO_INITDB_ROOT_PASSWORD: payment_pass
+      MONGO_INITDB_DATABASE: payment_db
+    volumes:
+      - mongo_data:/data/db
+
   order-service-db:
     image: postgres:16
     container_name: order-service-db
@@ -90,7 +103,34 @@ services:
 
 # services
 
+  payment-service:
+    image: yahorbandarenka/payment-service
+    container_name: payment-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - SPRING_PROFILES_ACTIVE=docker
+      - PAYMENT_MONGO_HOST=${PAYMENT_MONGO_HOST}
+      - PAYMENT_MONGO_PORT=${PAYMENT_MONGO_PORT}
+      - PAYMENT_MONGO_DB=${PAYMENT_MONGO_DB}
+      - PAYMENT_MONGO_USERNAME=${PAYMENT_MONGO_USERNAME}
+      - PAYMENT_MONGO_PASSWORD=${PAYMENT_MONGO_PASSWORD}
+      - AUTH_SERVICE_KAFKA_HOST=${AUTH_SERVICE_KAFKA_HOST}
+      - AUTH_SERVICE_KAFKA_PORT=${AUTH_SERVICE_KAFKA_PORT}
 
+  api-gateway:
+    image: yahorbandarenka/api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - order-service
+      - user-service
+      - auth-service
 
   order-service:
     image: yahorbandarenka/order-service
@@ -103,6 +143,8 @@ services:
       - ORDER_SERVICE_POSTGRES_DB=${ORDER_SERVICE_POSTGRES_DB}
       - ORDER_SERVICE_POSTGRES_HOST=${ORDER_SERVICE_POSTGRES_HOST}
       - ORDER_SERVICE_POSTGRES_PORT=${ORDER_SERVICE_POSTGRES_PORT}
+      - AUTH_SERVICE_KAFKA_HOST=${AUTH_SERVICE_KAFKA_HOST}
+      - AUTH_SERVICE_KAFKA_PORT=${AUTH_SERVICE_KAFKA_PORT}
       - SECRET_KEY=${SECRET_KEY}
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
@@ -155,3 +197,4 @@ volumes:
   user-pgdata:
   order-pgdata:
   redisdata:
+  mongo_data:
