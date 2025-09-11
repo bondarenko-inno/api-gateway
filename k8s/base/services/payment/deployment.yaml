@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: yahorbandarenka/payment-service
+          ports:
+            - containerPort: 8082
+          env:
+            - name: PAYMENT_MONGO_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: PAYMENT_MONGO_HOST
+            - name: PAYMENT_MONGO_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: PAYMENT_MONGO_PORT
+            - name: PAYMENT_MONGO_DB
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: PAYMENT_MONGO_DB
+            - name: PAYMENT_MONGO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: PAYMENT_MONGO_USERNAME
+            - name: PAYMENT_MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: PAYMENT_MONGO_PASSWORD
+            - name: AUTH_SERVICE_KAFKA_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AUTH_SERVICE_KAFKA_HOST
+            - name: AUTH_SERVICE_KAFKA_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AUTH_SERVICE_KAFKA_PORT
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SECRET_KEY

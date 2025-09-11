@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: yahorbandarenka/user-service
+          ports:
+            - containerPort: 8071
+          env:
+            - name: USER_SERVICE_POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: USER_SERVICE_POSTGRES_USER
+            - name: USER_SERVICE_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: USER_SERVICE_POSTGRES_PASSWORD
+            - name: USER_SERVICE_POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: USER_SERVICE_POSTGRES_DB
+            - name: USER_SERVICE_POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: USER_SERVICE_POSTGRES_HOST
+            - name: USER_SERVICE_POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: USER_SERVICE_POSTGRES_PORT
+            - name: USER_SERVICE_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: USER_SERVICE_REDIS_PASSWORD
+            - name: USER_SERVICE_REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: USER_SERVICE_REDIS_HOST
+            - name: USER_SERVICE_REDIS_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: USER_SERVICE_REDIS_PORT
+            - name: AUTH_SERVICE_KAFKA_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AUTH_SERVICE_KAFKA_HOST
+            - name: AUTH_SERVICE_KAFKA_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AUTH_SERVICE_KAFKA_PORT
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SECRET_KEY

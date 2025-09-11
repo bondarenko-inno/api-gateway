@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: yahorbandarenka/order-service
+          ports:
+            - containerPort: 8081
+          env:
+            - name: ORDER_SERVICE_POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: ORDER_SERVICE_POSTGRES_USER
+            - name: ORDER_SERVICE_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: ORDER_SERVICE_POSTGRES_PASSWORD
+            - name: ORDER_SERVICE_POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: ORDER_SERVICE_POSTGRES_DB
+            - name: ORDER_SERVICE_POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: ORDER_SERVICE_POSTGRES_HOST
+            - name: ORDER_SERVICE_POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: ORDER_SERVICE_POSTGRES_PORT
+            - name: AUTH_SERVICE_KAFKA_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AUTH_SERVICE_KAFKA_HOST
+            - name: AUTH_SERVICE_KAFKA_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AUTH_SERVICE_KAFKA_PORT
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SECRET_KEY
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
