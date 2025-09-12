@@ -15,6 +15,7 @@ spec:
       containers:
         - name: user-service
           image: yahorbandarenka/user-service
+          imagePullPolicy: Always
           ports:
             - containerPort: 8071
           env:
@@ -75,3 +76,17 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: SECRET_KEY
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8071
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8071
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 10

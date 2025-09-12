@@ -15,6 +15,7 @@ spec:
       containers:
         - name: payment-service
           image: yahorbandarenka/payment-service
+          imagePullPolicy: Always
           ports:
             - containerPort: 8082
           env:
@@ -60,3 +61,17 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: SECRET_KEY
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 10

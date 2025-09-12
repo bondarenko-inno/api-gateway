@@ -15,6 +15,7 @@ spec:
       containers:
         - name: auth-service
           image: yahorbandarenka/auth-service
+          imagePullPolicy: Always
           ports:
             - containerPort: 9000
           env:
@@ -60,3 +61,17 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: SECRET_KEY
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 9000
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 9000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 10
