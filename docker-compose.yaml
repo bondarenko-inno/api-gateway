@@ -1,0 +1,200 @@
+name: market-place
+
+services:
+#  databases
+
+  mongo:
+    image: mongo:6.0
+    container_name: mongo-db
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: payment_user
+      MONGO_INITDB_ROOT_PASSWORD: payment_pass
+      MONGO_INITDB_DATABASE: payment_db
+    volumes:
+      - mongo_data:/data/db
+
+  order-service-db:
+    image: postgres:16
+    container_name: order-service-db
+    environment:
+      - POSTGRES_USER=${ORDER_SERVICE_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${ORDER_SERVICE_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${ORDER_SERVICE_POSTGRES_DB}
+    ports:
+      - "5436:5432"
+    volumes:
+      - order-pgdata:/var/lib/postgresql/data
+
+
+  auth-service-db:
+    image: postgres:16
+    container_name: auth-service-db
+    environment:
+      - POSTGRES_USER=${AUTH_SERVICE_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${AUTH_SERVICE_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${AUTH_SERVICE_POSTGRES_DB}
+    ports:
+      - "5434:5432"
+    volumes:
+      - auth-pgdata:/var/lib/postgresql/data
+
+
+  user-service-db:
+    image: postgres:16
+    container_name: user-service-db
+    environment:
+      - POSTGRES_USER=${USER_SERVICE_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${USER_SERVICE_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${USER_SERVICE_POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - user-pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.2
+    container_name: user-service-redis
+    environment:
+      - REDIS_PASSWORD=${USER_SERVICE_REDIS_PASSWORD}
+    command: [
+      "redis-server",
+      "--appendonly", "yes",
+      "--requirepass", "${USER_SERVICE_REDIS_PASSWORD}"
+    ]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+# kafka
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+# kafka
+
+  kafka-auth:
+    container_name: kafka-auth
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-auth:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+
+# services
+
+  payment-service:
+    image: yahorbandarenka/payment-service
+    container_name: payment-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - SPRING_PROFILES_ACTIVE=docker
+      - PAYMENT_MONGO_HOST=${PAYMENT_MONGO_HOST}
+      - PAYMENT_MONGO_PORT=${PAYMENT_MONGO_PORT}
+      - PAYMENT_MONGO_DB=${PAYMENT_MONGO_DB}
+      - PAYMENT_MONGO_USERNAME=${PAYMENT_MONGO_USERNAME}
+      - PAYMENT_MONGO_PASSWORD=${PAYMENT_MONGO_PASSWORD}
+      - AUTH_SERVICE_KAFKA_HOST=${AUTH_SERVICE_KAFKA_HOST}
+      - AUTH_SERVICE_KAFKA_PORT=${AUTH_SERVICE_KAFKA_PORT}
+
+  api-gateway:
+    image: yahorbandarenka/api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - order-service
+      - user-service
+      - auth-service
+
+  order-service:
+    image: yahorbandarenka/order-service
+    container_name: order-service
+    ports:
+      - "8081:8081"
+    environment:
+      - ORDER_SERVICE_POSTGRES_USER=${ORDER_SERVICE_POSTGRES_USER}
+      - ORDER_SERVICE_POSTGRES_PASSWORD=${ORDER_SERVICE_POSTGRES_PASSWORD}
+      - ORDER_SERVICE_POSTGRES_DB=${ORDER_SERVICE_POSTGRES_DB}
+      - ORDER_SERVICE_POSTGRES_HOST=${ORDER_SERVICE_POSTGRES_HOST}
+      - ORDER_SERVICE_POSTGRES_PORT=${ORDER_SERVICE_POSTGRES_PORT}
+      - AUTH_SERVICE_KAFKA_HOST=${AUTH_SERVICE_KAFKA_HOST}
+      - AUTH_SERVICE_KAFKA_PORT=${AUTH_SERVICE_KAFKA_PORT}
+      - SECRET_KEY=${SECRET_KEY}
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - order-service-db
+
+  auth-service:
+    image: yahorbandarenka/auth-service
+    container_name: auth-service
+    ports:
+      - "9000:9000"
+    environment:
+      - AUTH_SERVICE_POSTGRES_DB=${AUTH_SERVICE_POSTGRES_DB}
+      - AUTH_SERVICE_POSTGRES_USER=${AUTH_SERVICE_POSTGRES_USER}
+      - AUTH_SERVICE_POSTGRES_PASSWORD=${AUTH_SERVICE_POSTGRES_PASSWORD}
+      - AUTH_SERVICE_POSTGRES_PORT=${AUTH_SERVICE_POSTGRES_PORT}
+      - AUTH_SERVICE_POSTGRES_HOST=${AUTH_SERVICE_POSTGRES_HOST}
+      - AUTH_SERVICE_KAFKA_HOST=${AUTH_SERVICE_KAFKA_HOST}
+      - AUTH_SERVICE_KAFKA_PORT=${AUTH_SERVICE_KAFKA_PORT}
+      - SPRING_PROFILES_ACTIVE=docker
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - auth-service-db
+      - kafka-auth
+
+
+  user-service:
+    image: yahorbandarenka/user-service
+    container_name: user-service
+    ports:
+      - "8071:8071"
+    environment:
+      - USER_SERVICE_POSTGRES_USER=${USER_SERVICE_POSTGRES_USER}
+      - USER_SERVICE_POSTGRES_PASSWORD=${USER_SERVICE_POSTGRES_PASSWORD}
+      - USER_SERVICE_POSTGRES_DB=${USER_SERVICE_POSTGRES_DB}
+      - USER_SERVICE_POSTGRES_HOST=${USER_SERVICE_POSTGRES_HOST}
+      - USER_SERVICE_POSTGRES_PORT=${USER_SERVICE_POSTGRES_PORT}
+      - USER_SERVICE_REDIS_PASSWORD=${USER_SERVICE_REDIS_PASSWORD}
+      - USER_SERVICE_REDIS_HOST=${USER_SERVICE_REDIS_HOST}
+      - USER_SERVICE_REDIS_PORT=${USER_SERVICE_REDIS_PORT}
+      - AUTH_SERVICE_KAFKA_HOST=${AUTH_SERVICE_KAFKA_HOST}
+      - AUTH_SERVICE_KAFKA_PORT=${AUTH_SERVICE_KAFKA_PORT}
+      - SECRET_KEY=${SECRET_KEY}
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - user-service-db
+      - redis
+
+volumes:
+  auth-pgdata:
+  user-pgdata:
+  order-pgdata:
+  redisdata:
+  mongo_data:
