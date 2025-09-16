@@ -44,20 +44,27 @@ public class JwtAuthenticationFilter implements WebFilter {
     @NonNull
     public Mono<Void> filter(ServerWebExchange exchange, @NonNull WebFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
-
-        if (isPublicPath(path)) {
-            return chain.filter(exchange);
-        }
-
-
-        if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS) {
-            return chain.filter(exchange);
-        }
-
-
+        HttpMethod method = exchange.getRequest().getMethod();
         String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
 
+        log.info("Incoming request: {} {}", method, path);
+        log.debug("Authorization header: {}", authHeader);
+
+        // Публичные пути
+        if (isPublicPath(path)) {
+            log.info("Public path, skipping JWT validation: {}", path);
+            return chain.filter(exchange);
+        }
+
+        // Preflight OPTIONS
+        if (HttpMethod.OPTIONS.equals(method)) {
+            log.info("OPTIONS request, skipping JWT validation: {}", path);
+            return chain.filter(exchange);
+        }
+
+        // JWT проверка
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.warn("JWT token missing or invalid for request: {} {}", method, path);
             return writeError(exchange, HttpStatus.UNAUTHORIZED, "JWT token is missing or invalid!");
         }
 
@@ -67,6 +74,8 @@ public class JwtAuthenticationFilter implements WebFilter {
             Claims claims = jwtTokenValidator.validateToken(token);
             String email = claims.getSubject();
             String role = claims.get("role", String.class);
+
+            log.info("JWT valid. User: {}, Role: {}", email, role);
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
@@ -81,10 +90,10 @@ public class JwtAuthenticationFilter implements WebFilter {
                     .contextWrite(ReactiveSecurityContextHolder.withSecurityContext(Mono.just(securityContext)));
 
         } catch (JwtException e) {
-            log.error("JWT validation failed: {}", e.getMessage());
+            log.error("JWT validation failed for request {} {}: {}", method, path, e.getMessage());
             return writeError(exchange, HttpStatus.UNAUTHORIZED, "Invalid JWT token!");
         } catch (Exception e) {
-            log.error("Unexpected error in JWT filter: {}", e.getMessage(), e);
+            log.error("Unexpected error in JWT filter for request {} {}: {}", method, path, e.getMessage(), e);
             return writeError(exchange, HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
         }
     }
