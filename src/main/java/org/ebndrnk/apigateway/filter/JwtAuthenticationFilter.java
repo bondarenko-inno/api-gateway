@@ -7,6 +7,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ebndrnk.apigateway.exception.ErrorInfo;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -47,6 +48,12 @@ public class JwtAuthenticationFilter implements WebFilter {
         if (isPublicPath(path)) {
             return chain.filter(exchange);
         }
+
+
+        if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS) {
+            return chain.filter(exchange);
+        }
+
 
         String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
 
