@@ -31,7 +31,6 @@ public class SecurityConfig {
      * Defines the reactive security filter chain for the application.
      * <ul>
      *     <li>Disables CSRF protection (as we use JWT and stateless sessions).</li>
-     *     <li>Enables CORS with default configuration.</li>
      *     <li>Allows unauthenticated access to whitelisted endpoints.</li>
      *     <li>Secures all other endpoints by requiring authentication.</li>
      *     <li>Adds a custom reactive JWT authentication filter.</li>
@@ -43,7 +42,6 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers("/auth/**").permitAll()
@@ -55,24 +53,6 @@ public class SecurityConfig {
     }
 
 
-    /**
-     * Configures CORS for reactive applications.
-     * Allows requests from any origin with common HTTP methods and headers.
-     *
-     * @return CorsConfigurationSource for reactive CORS configuration
-     */
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-        configuration.setAllowedMethods(List.of("*"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
 
 
 }
