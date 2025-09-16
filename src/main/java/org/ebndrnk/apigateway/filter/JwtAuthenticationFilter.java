@@ -50,17 +50,11 @@ public class JwtAuthenticationFilter implements WebFilter {
         log.info("Incoming request: {} {}", method, path);
         log.debug("Authorization header: {}", authHeader);
 
-        // Публичные пути
-        if (isPublicPath(path)) {
-            log.info("Public path, skipping JWT validation: {}", path);
+        if (HttpMethod.OPTIONS.equals(method) || isPublicPath(path)) {
+            log.info("Skipping JWT validation for path: {}", path);
             return chain.filter(exchange);
         }
 
-        // Preflight OPTIONS
-        if (HttpMethod.OPTIONS.equals(method)) {
-            log.info("OPTIONS request, skipping JWT validation: {}", path);
-            return chain.filter(exchange);
-        }
 
         // JWT проверка
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -105,6 +99,11 @@ public class JwtAuthenticationFilter implements WebFilter {
     private Mono<Void> writeError(ServerWebExchange exchange, HttpStatus status, String message) {
         exchange.getResponse().setStatusCode(status);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        exchange.getResponse().getHeaders().add("Access-Control-Allow-Origin", "http://localhost:5173");
+        exchange.getResponse().getHeaders().add("Access-Control-Allow-Credentials", "true");
+        exchange.getResponse().getHeaders().add("Access-Control-Allow-Headers", "Authorization,Content-Type");
+        exchange.getResponse().getHeaders().add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+
 
         ErrorInfo errorInfo = new ErrorInfo(
                 LocalDateTime.now().toString(),
